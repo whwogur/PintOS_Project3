@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.inc": "c",
+        "process.h": "c",
+        "*.tcc": "c",
+        "fstream": "c"
+    }
+}
