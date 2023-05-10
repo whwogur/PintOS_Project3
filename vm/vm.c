@@ -174,6 +174,9 @@ vm_do_claim_page (struct page *page) {
 /* Initialize new supplemental page table */
 void
 supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) {
+	struct hash *hash_table = (struct hash*)malloc(sizeof(struct hash));
+	spt->spt_hash_table = hash_table;
+	hash_init(&spt->spt_hash_table, hash_func, hash_less, NULL);
 }
 
 /* Copy supplemental page table from src to dst */
