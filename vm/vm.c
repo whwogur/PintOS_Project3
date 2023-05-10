@@ -83,7 +83,7 @@ spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) {
 }
 /* 해시 요소들 비교 */
 bool
-page_compare (const struct hash_elem *a, const struct hash_elem *b, void *aux UNUSED)
+hash_less (const struct hash_elem *a, const struct hash_elem *b, void *aux UNUSED)
 {
 	const struct page *a_p = hash_entry(a, struct page, hash_elem);
 	const struct page *b_p = hash_entry(b, struct page, hash_elem);
@@ -208,7 +208,7 @@ void
 supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) {
 	struct hash *hash_table = (struct hash*)malloc(sizeof(struct hash));
 	spt->spt_hash_table = *hash_table;
-	hash_init(&spt->spt_hash_table, hash_func, page_compare, NULL);
+	hash_init(&spt->spt_hash_table, hash_func, hash_less, NULL);
 }
 
 /* Copy supplemental page table from src to dst */
