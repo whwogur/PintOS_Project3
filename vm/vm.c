@@ -4,6 +4,9 @@
 #include "vm/vm.h"
 #include "vm/inspect.h"
 #include "lib/kernel/hash.h"
+#include "threads/vaddr.h"
+#include "threads/mmu.h"
+
 /* Initializes the virtual memory subsystem by invoking each subsystem's
  * intialize codes. */
 void
@@ -17,7 +20,14 @@ vm_init (void) {
 	/* DO NOT MODIFY UPPER LINES. */
 	/* TODO: Your code goes here. */
 }
-
+static void
+frame_init(struct frame *frame, const void *addr)
+{
+	frame->kva = addr;
+	frame->page = NULL;
+	frame->accessed = false;
+	frame->dirty = false;
+}
 /* Get the type of the page. This function is useful if you want to know the
  * type of the page after it will be initialized.
  * This function is fully implemented now. */
@@ -91,10 +101,8 @@ hash_func (const struct hash_elem *a, void *aux UNUSED)
 bool
 spt_insert_page (struct supplemental_page_table *spt UNUSED,
 		struct page *page UNUSED) {
-	int succ = false;
 	/* TODO: Fill this function. */
-
-	return succ;
+	return hash_insert(&spt->spt_hash_table, &page->hash_elem);
 }
 
 void
@@ -128,8 +136,13 @@ vm_evict_frame (void) {
  * space.*/
 static struct frame *
 vm_get_frame (void) {
-	struct frame *frame = NULL;
 	/* TODO: Fill this function. */
+	struct frame *frame = (struct frame*)malloc(sizeof(struct frame));
+	void *addr = palloc_get_page(PAL_USER);
+
+	if (!addr) PANIC ("todo");
+
+	frame_init(frame, addr);
 
 	ASSERT (frame != NULL);
 	ASSERT (frame->page == NULL);
@@ -169,8 +182,9 @@ vm_dealloc_page (struct page *page) {
 /* Claim the page that allocate on VA. */
 bool
 vm_claim_page (void *va UNUSED) {
-	struct page *page = NULL;
 	/* TODO: Fill this function */
+	struct page *page = spt_find_page (&thread_current ()->spt, va);
+	if (!page) return false;
 
 	return vm_do_claim_page (page);
 }
@@ -192,6 +206,8 @@ vm_do_claim_page (struct page *page) {
 /* Initialize new supplemental page table */
 void
 supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) {
+	struct hash *hash_table = (struct hash*)malloc(sizeof(struct hash));
+	spt->spt_hash_table = *hash_table;
 	hash_init(&spt->spt_hash_table, hash_func, page_compare, NULL);
 }
 
