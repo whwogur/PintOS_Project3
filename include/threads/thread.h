@@ -120,8 +120,7 @@ struct thread
 	struct semaphore fork_sema;
 	struct semaphore free_sema;
 
-	/* -- Project 3 --*/
-	struct supplemental_page_table spt;
+	
 
 	int stdin_count;
 	int stdout_count;

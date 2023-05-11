@@ -1,8 +1,13 @@
 {
     "files.associations": {
+        "*.rmd": "markdown",
         "*.inc": "c",
         "process.h": "c",
         "*.tcc": "c",
-        "fstream": "c"
-    }
+        "fstream": "c",
+        "hash.h": "c",
+        "vm.h": "c",
+        "thread.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

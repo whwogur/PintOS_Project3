@@ -262,8 +262,6 @@ int process_exec(void *f_name)
 	}
 	/* And then load the binary */
 	success = load(file_name, &_if);
-	/*memset(&_if, 0, sizeof _if);
-	success = load(file_name_copy, &_if);*/
 
 	/* If load failed, quit. */
 	if (!success)
@@ -519,6 +517,8 @@ static bool load(const char *file_name, struct intr_frame *if_)
 
 	/* 현재 오픈한 파일에 다른내용 쓰지 못하게 함 */
 	file_deny_write(file);
+
+	supplemental_page_table_init(&t->spt);
 
 	/* Read and verify executable header. */
 	if (file_read(file, &ehdr, sizeof ehdr) != sizeof ehdr || memcmp(ehdr.e_ident, "\177ELF\2\1\1", 7) || ehdr.e_type != 2 || ehdr.e_machine != 0x3E // amd64
