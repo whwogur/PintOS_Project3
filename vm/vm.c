@@ -57,16 +57,28 @@ vm_alloc_page_with_initializer (enum vm_type type, void *upage, bool writable,
 	ASSERT (VM_TYPE(type) != VM_UNINIT)
 
 	struct supplemental_page_table *spt = &thread_current ()->spt;
-
+	struct page *uninit = malloc(sizeof(struct page));
 	/* Check wheter the upage is already occupied or not. */
 	if (spt_find_page (spt, upage) == NULL) {
 		/* TODO: Create the page, fetch the initialier according to the VM type,
 		 * TODO: and then create "uninit" page struct by calling uninit_new. You
 		 * TODO: should modify the field after calling the uninit_new. */
+		bool (*type_initializer)(struct page*, enum vm_type, void*) = NULL;
 
+		if(VM_TYPE(type) == VM_ANON) type_initializer = anon_initializer;
+		else if(VM_TYPE(type) == VM_FILE) type_initializer = file_backed_initializer;
+
+		uninit_new(uninit, upage, init, type, aux, type_initializer);
+		uninit->writable = writable;
+		uninit->aux = 0;
 		/* TODO: Insert the page into the spt. */
+		if(!spt_insert_page(spt, uninit))
+			goto err;
+		
+		return true;
 	}
 err:
+	free(uninit);
 	return false;
 }
 
@@ -74,10 +86,9 @@ err:
 struct page *
 spt_find_page (struct supplemental_page_table *spt UNUSED, void *va UNUSED) {
 	/* TODO: Fill this function. */
-	struct page* page = (struct page*)malloc(sizeof(struct page));
-
-	page->va = pg_round_down(va); // PGMASK와 & 연산 해 오프셋 제거(VPN 추출)
-	struct hash_elem *e = hash_find (&spt->spt_hash_table, &page->hash_elem);
+	struct page *page  = pg_round_down(va); // malloc
+	// page =  // PGMASK와 & 연산 해 오프셋 제거(VPN 추출)
+	struct hash_elem *e = hash_find (spt->spt_hash_table, &page->hash_elem);
 
 	return e ? hash_entry(e, struct page, hash_elem) : NULL;
 }
@@ -101,8 +112,12 @@ hash_func (const struct hash_elem *a, void *aux UNUSED)
 bool
 spt_insert_page (struct supplemental_page_table *spt UNUSED,
 		struct page *page UNUSED) {
-	/* TODO: Fill this function. */
-	return hash_insert(&spt->spt_hash_table, &page->hash_elem);
+	/* TODO: Fill this function. */ 
+	size_t before = hash_size(spt->spt_hash_table);
+	hash_insert(spt->spt_hash_table, &page->hash_elem); // 나중에 체크
+	size_t after = hash_size(spt->spt_hash_table);
+
+	return before == after;
 }
 
 void
@@ -199,16 +214,15 @@ vm_do_claim_page (struct page *page) {
 	page->frame = frame;
 
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
-
 	return swap_in (page, frame->kva);
 }
 
 /* Initialize new supplemental page table */
 void
 supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) {
-	struct hash *hash_table = (struct hash*)malloc(sizeof(struct hash));
-	spt->spt_hash_table = *hash_table;
-	hash_init(&spt->spt_hash_table, hash_func, hash_less, NULL);
+	struct hash *hash_table = malloc(sizeof(struct hash));
+	spt->spt_hash_table = hash_table;
+	hash_init(spt->spt_hash_table, hash_func, hash_less, NULL);
 }
 
 /* Copy supplemental page table from src to dst */
