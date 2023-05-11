@@ -9,5 +9,4 @@
         "vm.h": "c",
         "thread.h": "c"
     },
-    "C_Cpp.errorSquiggles": "disabled"
 }

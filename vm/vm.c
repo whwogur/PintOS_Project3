@@ -72,9 +72,9 @@ spt_find_page(struct supplemental_page_table *spt UNUSED, void *va UNUSED)
 	/* TODO: Fill this function. */
 	struct page *page = pg_round_down(va);
 
-	struct hash_elem *e = hash_find(spt->spt_hash_table, page->hash_elem);
+	struct hash_elem *e = hash_find(&spt->spt_hash_table, &page->hash_elem);
 
-	return e ? hash_entry(e, struct hash, hash_elem) : NULL;
+	return e ? hash_entry(e, struct page, hash_elem) : NULL;
 }
 
 /* 해시 요소들 비교
@@ -101,7 +101,7 @@ bool spt_insert_page(struct supplemental_page_table *spt UNUSED,
 	int succ = false;
 	/* TODO: Fill this function. */
 	size_t before_insert = hash_size(&spt->spt_hash_table);
-	hash_insert(&spt->spt_hash_table, page->hash_elem);
+	hash_insert(&spt->spt_hash_table, &page->hash_elem);
 	size_t after_insert = hash_size(&spt->spt_hash_table);
 
 	if (before_insert != after_insert)
