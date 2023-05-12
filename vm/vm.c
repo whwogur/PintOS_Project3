@@ -3,6 +3,7 @@
 #include "threads/malloc.h"
 #include "vm/vm.h"
 #include "vm/inspect.h"
+#include "lib/kernel/hash.h"
 
 /* Initializes the virtual memory subsystem by invoking each subsystem's
  * intialize codes. */
@@ -175,7 +176,7 @@ vm_do_claim_page (struct page *page) {
 void
 supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) {
 	struct hash *hash_table = (struct hash*)malloc(sizeof(struct hash));
-	spt->spt_hash_table = hash_table;
+	spt->spt_hash_table = *hash_table;
 	hash_init(&spt->spt_hash_table, hash_func, hash_less, NULL);
 }
 
@@ -190,4 +191,24 @@ void
 supplemental_page_table_kill (struct supplemental_page_table *spt UNUSED) {
 	/* TODO: Destroy all the supplemental_page_table hold by thread and
 	 * TODO: writeback all the modified contents to the storage. */
+}
+
+
+/* VIRTUAL MEMORY를 위해 추가 1 */
+unsigned hash_func (const struct hash_elem *e, void *aux) {
+	const struct page *p = hash_entry(e, struct page, hash_elem);
+	return hash_bytes (&p->va, sizeof(p->va));
+}
+/* ----------------------------*/
+
+
+/* VIRTUAL MEMORY를 위해 추가 2 */
+// 근데 왜 기준??
+bool hash_less (const struct hash_elem *a, 
+				const struct hash_elem *b, 
+				void *aux) {
+	struct page *page_a = hash_entry(a, struct page, hash_elem);
+	struct page *page_b = hash_entry(b, struct page, hash_elem);
+	
+	return page_a->va < page_b->va; 
 }

@@ -391,21 +391,3 @@ remove_elem (struct hash *h, struct hash_elem *e) {
 	h->elem_cnt--;
 	list_remove (&e->list_elem);
 }
-
-
-/* VIRTUAL MEMORY를 위해 추가 1 */
-uint64_t hash_func (const struct hash_elem *e, void *aux) {
-	
-
-
-}
-/* ----------------------------*/
-
-
-/* VIRTUAL MEMORY를 위해 추가 2 */
-bool hash_less (const struct hash_elem *a, 
-				const struct hash_elem *b, 
-				void *aux) {
-	
-
-}

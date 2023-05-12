@@ -1,8 +1,14 @@
 {
     "files.associations": {
+        "*.html": "html",
         "*.inc": "c",
         "process.h": "c",
         "*.tcc": "c",
-        "fstream": "c"
+        "fstream": "c",
+        "file.h": "c",
+        "palloc.h": "c",
+        "stdint.h": "c",
+        "hash.h": "c",
+        "inspect.h": "c"
     }
 }
