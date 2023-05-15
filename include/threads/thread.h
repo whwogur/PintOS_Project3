@@ -122,8 +122,8 @@ struct thread
 
 	/* -- Project 3 --*/
 
-	int stdin_count;
-	int stdout_count;
+	uintptr_t rsp;
+	void *stack_bottom;
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */

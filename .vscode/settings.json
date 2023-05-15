@@ -3,6 +3,11 @@
         "*.inc": "c",
         "process.h": "c",
         "*.tcc": "c",
-        "fstream": "c"
+        "fstream": "c",
+        "filesys.h": "c",
+        "cstdlib": "c"
+    },
+    "editor.tokenColorCustomizations": {
+        "comments": "#ffffff"
     }
 }

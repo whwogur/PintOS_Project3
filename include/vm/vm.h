@@ -66,10 +66,17 @@ struct page {
 struct frame {
 	void *kva;
 	struct page *page;
+};
 
-	/* -- Project 3 -- */
-	bool accessed;
-	bool dirty;
+/* -- Project3 -- */
+struct aux_struct {
+	struct file *vmfile;
+	off_t ofs;
+	uint32_t read_bytes;
+	uint32_t zero_bytes;
+	bool is_loaded;
+	bool writable;
+	uint8_t upage;
 };
 
 /* The function table for page operations.
