@@ -9,6 +9,17 @@
         "palloc.h": "c",
         "stdint.h": "c",
         "hash.h": "c",
-        "inspect.h": "c"
+        "inspect.h": "c",
+        "vm.h": "c",
+        "stdbool.h": "c",
+        "intrinsic.h": "c",
+        "vaddr.h": "c",
+        "synch.h": "c",
+        "intr-stubs.h": "c",
+        "interrupt.h": "c",
+        "flags.h": "c",
+        "stddef.h": "c",
+        "thread.h": "c",
+        "mmu.h": "c"
     }
 }

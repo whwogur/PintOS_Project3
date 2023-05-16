@@ -6,9 +6,9 @@
 #include <stdint.h>
 #include "threads/interrupt.h"
 #include "threads/synch.h"
-#ifdef VM
+// #ifdef VM
 #include "vm/vm.h"
-#endif
+// #endif
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -127,10 +127,10 @@ struct thread
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4; /* Page map level 4 */
 #endif
-#ifdef VM
+// #ifdef VM
 	/* Table for whole virtual memory owned by thread. */
 	struct supplemental_page_table spt;
-#endif
+// #endif
 
 	/* Owned by thread.c. */
 	struct intr_frame tf; /* Information for switching */
