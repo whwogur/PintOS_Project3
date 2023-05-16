@@ -1,6 +1,6 @@
 #ifndef VM_VM_H
 #define VM_VM_H
-// #include "lib/kernel/hash.h"
+#include "include/lib/kernel/hash.h"
 #include <stdbool.h>
 #include "threads/palloc.h"
 #include "include/lib/kernel/hash.h"
