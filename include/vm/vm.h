@@ -1,5 +1,6 @@
 #ifndef VM_VM_H
 #define VM_VM_H
+#include "include/lib/kernel/hash.h"
 #include <stdbool.h>
 #include "threads/palloc.h"
 
@@ -47,6 +48,7 @@ struct page {
 
 	/* Your implementation */
 	struct hash_elem hash_elem;
+	bool read_write;
 	/* Per-type data are binded into the union.
 	 * Each function automatically detects the current union */
 	union {

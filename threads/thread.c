@@ -221,9 +221,15 @@ tid_t thread_create(const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 
+	/* Add to run queue. */
 	struct thread *parent = thread_current();
 	list_push_back(&parent->child_list, &t->child_elem);
-	/* Add to run queue. */
+
+
+	/* VIRTUAL MEMORY를 위해 추가|수정 5 */
+	supplemental_page_table_init(&t->spt);
+	/* --------------------------------*/
+
 	thread_unblock(t);
 
 	test_max_priority();
