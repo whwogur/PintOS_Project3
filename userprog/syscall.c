@@ -132,13 +132,8 @@ void syscall_handler(struct intr_frame *f UNUSED)
 void check_address(void *addr)
 {
     struct thread *curr = thread_current();
-    // user virtual address 인지 ; 커널 VM이 아닌지
-    // 주소가 NULL 은 아닌지
-    // 유저 주소 영역내를 가르키지만 아직 할당되지 않았는지 (pml4_get_page)
-    if (!is_user_vaddr(addr) || addr == NULL || pml4_get_page(curr->pml4, addr) == NULL)
-    {
+    if (addr == NULL || is_kernel_vaddr(addr) || pml4_get_page(curr->pml4, addr) == NULL)
         exit(-1);
-    }
 }
 
 void halt(void)

@@ -50,6 +50,7 @@ struct page
 
 	/* Your implementation */
 	struct hash_elem hash_elem;
+	bool rw;
 	/* Per-type data are binded into the union.
 	 * Each function automatically detects the current union */
 	union
@@ -62,7 +63,6 @@ struct page
 #endif
 	};
 };
-
 /* The representation of "frame" */
 struct frame
 {
@@ -94,6 +94,14 @@ struct page_operations
 struct supplemental_page_table
 {
 	struct hash spt_hash_table;
+};
+
+struct binary_aux
+{
+	struct file *file;
+	off_t ofs;
+	uint32_t read_bytes;
+	uint32_t zero_bytes;
 };
 
 #include "threads/thread.h"

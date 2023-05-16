@@ -119,7 +119,6 @@ static bool duplicate_pte(uint64_t *pte, void *va, void *aux)
 	void *newpage;
 	bool writable;
 
-	/* 1. TODO: If the parent_page is kernel page, then return immediately. */
 	if (is_kernel_vaddr(va))
 	{
 		return true;
@@ -132,17 +131,12 @@ static bool duplicate_pte(uint64_t *pte, void *va, void *aux)
 		return false;
 	}
 
-	/* 3. TODO: Allocate new PAL_USER page for the child and set result to
-	 *    TODO: NEWPAGE. */
 	newpage = palloc_get_page(PAL_USER | PAL_ZERO);
 	if (newpage == NULL)
 	{
 		return false;
 	}
 
-	/* 4. TODO: Duplicate parent's page to the new page and
-	 *    TODO: check whether parent's page is writable or not (set WRITABLE
-	 *    TODO: according to the result). */
 	memcpy(newpage, parent_page, PGSIZE); // parent_page는 가상주소이고, 이것을 newpage에 복사 _ SIZE는 4KB(할당해준 공간도 4KB)
 	writable = is_writable(pte);		  // pte가 읽고/쓰기가 가능한지 확인
 
@@ -166,7 +160,6 @@ static void __do_fork(void *aux)
 	struct intr_frame if_;
 	struct thread *parent = (struct thread *)aux;
 	struct thread *current = thread_current();
-	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_) */
 	struct intr_frame *parent_if;
 	bool success = true;
 
@@ -189,12 +182,6 @@ static void __do_fork(void *aux)
 	if (!pml4_for_each(parent->pml4, duplicate_pte, parent))
 		goto error;
 #endif
-
-	/* TODO: Your code goes here.
-	 * TODO: Hint) To duplicate the file object, use `file_duplicate`
-	 * TODO:       in include/filesys/file.h. Note that parent should not return
-	 * TODO:       from the fork() until this function successfully duplicates
-	 * TODO:       the resources of parent.*/
 
 	if (parent->fd_idx >= FDCOUNT_LIMIT)
 		goto error;
@@ -322,10 +309,6 @@ int process_wait(tid_t child_tid UNUSED)
 void process_exit(void)
 {
 	struct thread *curr = thread_current();
-	/* TODO: Your code goes here.
-	 * TODO: Implement process termination message (see
-	 * TODO: project2/process_termination.html).
-	 * TODO: We recommend you to implement process resource cleanup here. */
 
 	// Close all Opened file by for loop
 	for (int i = 0; i < FDCOUNT_LIMIT; i++)
@@ -518,7 +501,7 @@ static bool load(const char *file_name, struct intr_frame *if_)
 	/* 현재 오픈한 파일에 다른내용 쓰지 못하게 함 */
 	file_deny_write(file);
 
-	supplemental_page_table_init(&t->spt);
+	// supplemental_page_table_init(&t->spt);
 
 	/* Read and verify executable header. */
 	if (file_read(file, &ehdr, sizeof ehdr) != sizeof ehdr || memcmp(ehdr.e_ident, "\177ELF\2\1\1", 7) || ehdr.e_type != 2 || ehdr.e_machine != 0x3E // amd64
@@ -711,7 +694,6 @@ static bool load_segment(struct file *file, off_t ofs, uint8_t *upage,
 		uint8_t *kpage = palloc_get_page(PAL_USER);
 		if (kpage == NULL)
 			return false;
-
 		/* Load this page. */
 		if (file_read(file, kpage, page_read_bytes) != (int)page_read_bytes)
 		{
@@ -762,7 +744,12 @@ static bool setup_stack(struct intr_frame *if_)
  * KPAGE should probably be a page obtained from the user pool
  * with palloc_get_page().
  * Returns true on success, false if UPAGE is already mapped or
- * if memory allocation fails. */
+ * if memory allocation fails.
+ * 사용자 가상 주소 UPAGE에서 커널 가상 주소 KPAGE로의 매핑을 페이지 테이블에 추가합니다. WRITABLE이 참이면 사용자 프로세스가 페이지를 수정할 수 있고, 그렇지 않으면 읽기 전용입니다.
+UPAGE는 이미 매핑되어 있지 않아야 합니다.
+KPAGE는 palloc_get_page()로 사용자 풀에서 가져온 페이지여야 합니다.
+
+성공하면 true를 반환하고, UPAGE가 이미 매핑되어 있거나 메모리 할당이 실패하면 false를 반환합니다. */
 static bool install_page(void *upage, void *kpage, bool writable)
 {
 	struct thread *t = thread_current();
@@ -781,6 +768,19 @@ static bool lazy_load_segment(struct page *page, void *aux)
 	/* TODO: Load the segment from the file */
 	/* TODO: This called when the first page fault occurs on address VA. */
 	/* TODO: VA is available when calling this function. */
+	struct binary_aux *binary_aux = aux;
+
+	uint8_t kpage = page->frame->kva;
+	struct file *file = binary_aux->file;
+	uint32_t page_read_bytes = binary_aux->read_bytes;
+	uint32_t page_zero_bytes = binary_aux->zero_bytes;
+	if (file_read(file, kpage, page_read_bytes) != (int)page_read_bytes)
+	{
+		palloc_free_page(kpage);
+		free(aux);
+		return false;
+	}
+	memset(kpage + page_read_bytes, 0, page_zero_bytes);
 }
 
 /* Loads a segment starting at offset OFS in FILE at address
@@ -813,14 +813,26 @@ static bool load_segment(struct file *file, off_t ofs, uint8_t *upage,
 		size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
 		/* TODO: Set up aux to pass information to the lazy_load_segment. */
-		void *aux = NULL;
+		struct binary_aux *aux = (struct binary_aux *)malloc(sizeof(struct binary_aux));
+
+		aux->file = file;
+		aux->ofs = ofs;
+		aux->read_bytes = page_read_bytes;
+		aux->zero_bytes = page_zero_bytes;
+
 		if (!vm_alloc_page_with_initializer(VM_ANON, upage,
 											writable, lazy_load_segment, aux))
+		{
+			free(aux);
 			return false;
+		}
+
+		// spt_insert_page(&thread_current()->spt, upage);
 
 		/* Advance. */
 		read_bytes -= page_read_bytes;
 		zero_bytes -= page_zero_bytes;
+		ofs += page_zero_bytes;
 		upage += PGSIZE;
 	}
 	return true;

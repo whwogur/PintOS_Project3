@@ -7,7 +7,11 @@
  * initialization callback that passed from vm_alloc_page_with_initializer
  * function.
  * */
-
+/*
+모든 페이지는 uninit page로 생성된다. 첫번 째 page fault가 발생하면, 핸들러 체인은 uninit_initialize를 호출한다.
+uninit_initialize 함수는 vm_alloc_page_with_initializer로 전달받은 초기화 콜백을 호출하고
+페이지 객체를 초기화하여 페이지를 특정한 페이지로 변환한다. 
+*/
 #include "vm/vm.h"
 #include "vm/uninit.h"
 

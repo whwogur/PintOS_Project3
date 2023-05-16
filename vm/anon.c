@@ -17,7 +17,8 @@ static const struct page_operations anon_ops = {
 	.type = VM_ANON,
 };
 
-/* Initialize the data for anonymous pages */
+/* Initialize the data for anonymous pages 
+익명 페이지에 관한 어떤 것이든 설정할 수 있다.*/
 void
 vm_anon_init (void) {
 	/* TODO: Set up the swap_disk. */
@@ -29,7 +30,7 @@ bool
 anon_initializer (struct page *page, enum vm_type type, void *kva) {
 	/* Set up the handler */
 	page->operations = &anon_ops;
-
+	
 	struct anon_page *anon_page = &page->anon;
 }
 

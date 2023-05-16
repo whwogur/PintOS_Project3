@@ -2,6 +2,8 @@
 
 #include "threads/malloc.h"
 #include "vm/vm.h"
+#include "include/threads/vaddr.h"
+#include "include/threads/mmu.h"
 #include "vm/inspect.h"
 #include "lib/kernel/hash.h"
 /* Initializes the virtual memory subsystem by invoking each subsystem's
@@ -45,6 +47,11 @@ static struct frame *vm_evict_frame(void);
 bool vm_alloc_page_with_initializer(enum vm_type type, void *upage, bool writable,
 									vm_initializer *init, void *aux)
 {
+	/*1. 초기화되지 않은 주어진 type의 페이지 생성
+	  2. 위 페이지의 swap_in 핸들러는 자동적으로 페이지 타입에 맞게 페이지를 초기화
+	  3. AUX를 인자로 삼는 INIT함수 호출
+	  4. 페이지 구조체를 가지게 되면 프로세스의 보조 테이블에 그 페이지를 삽입
+	  tip) VM_TYPE 매크로를 사용할 것*/
 
 	ASSERT(VM_TYPE(type) != VM_UNINIT)
 
@@ -58,8 +65,28 @@ bool vm_alloc_page_with_initializer(enum vm_type type, void *upage, bool writabl
 		 * TODO: should modify the field after calling the uninit_new. */
 
 		/* TODO: Insert the page into the spt. */
+		struct page *page = (struct page *)malloc(sizeof(struct page));
+
+		typedef bool (*initializerFunc)(struct page *, enum vm_type, void *);
+		initializerFunc initializer = NULL;
+
+		switch (VM_TYPE(type))
+		{
+		case VM_ANON:
+			initializer = anon_initializer;
+			break;
+		case VM_FILE:
+			initializer = file_backed_initializer;
+			break;
+		default:
+			break;
+		}
+
+		uninit_new(page, upage, init, type, aux, initializer);
+		page->rw = writable;
+		return spt_insert_page(spt, page);
 	}
-err:
+
 	return false;
 }
 
@@ -69,8 +96,8 @@ err:
 struct page *
 spt_find_page(struct supplemental_page_table *spt UNUSED, void *va UNUSED)
 {
-	/* TODO: Fill this function. */
-	struct page *page = pg_round_down(va);
+	struct page *page;
+	page->va = pg_round_down(va);
 
 	struct hash_elem *e = hash_find(&spt->spt_hash_table, &page->hash_elem);
 
@@ -98,18 +125,7 @@ hash_func(const struct hash_elem *a, void *aux UNUSED)
 bool spt_insert_page(struct supplemental_page_table *spt UNUSED,
 					 struct page *page UNUSED)
 {
-	int succ = false;
-	/* TODO: Fill this function. */
-	size_t before_insert = hash_size(&spt->spt_hash_table);
-	hash_insert(&spt->spt_hash_table, &page->hash_elem);
-	size_t after_insert = hash_size(&spt->spt_hash_table);
-
-	if (before_insert != after_insert)
-	{
-		succ = true;
-	}
-
-	return succ;
+	return !hash_insert(&spt->spt_hash_table, &page->hash_elem);
 }
 
 void spt_remove_page(struct supplemental_page_table *spt, struct page *page)
@@ -146,9 +162,15 @@ vm_evict_frame(void)
 static struct frame *
 vm_get_frame(void)
 {
-	struct frame *frame = NULL;
-	/* TODO: Fill this function. */
+	struct frame *frame = malloc(sizeof(struct frame));
+	/*	프레임을 할당하고 프레임 구조체의 멤버들을 초기화한 후
+		해당 프레임을 반환합니다.  */
+	frame->kva = palloc_get_page(PAL_USER);
 
+	frame->page = NULL;
+
+	if (frame == NULL)
+		PANIC("TODO");
 	ASSERT(frame != NULL);
 	ASSERT(frame->page == NULL);
 	return frame;
@@ -174,7 +196,10 @@ bool vm_try_handle_fault(struct intr_frame *f UNUSED, void *addr UNUSED,
 	struct page *page = NULL;
 	/* TODO: Validate the fault */
 	/* TODO: Your code goes here */
-
+	/*3가지 폴트를 체크해야 함 1. 지연로딩 페이지, 2. 스왑아웃페이지, 3. 쓰기 보호 페이지*/
+	// if (lazy_loading)
+	// {
+	// }
 	return vm_do_claim_page(page);
 }
 
@@ -190,8 +215,10 @@ void vm_dealloc_page(struct page *page)
 bool vm_claim_page(void *va UNUSED)
 {
 	struct page *page = NULL;
-	/* TODO: Fill this function */
 
+	page = spt_find_page(&thread_current()->spt, va);
+	if (page == NULL)
+		return false;
 	return vm_do_claim_page(page);
 }
 
@@ -206,8 +233,12 @@ vm_do_claim_page(struct page *page)
 	page->frame = frame;
 
 	/* TODO: Insert page table entry to map page's VA to frame's PA. */
-
-	return swap_in(page, frame->kva);
+	/*그 이후 당신은 MMU를 세팅해야 하는데, 이는 가상 주소와 물리 주소를 매핑한 정보를 페이지 테이블에 추가해야 한다는 것을 의미합니다.
+	위의 함수는 앞에서 말한 연산이 성공적으로 수행되었을 경우에 true를 반환하고 그렇지 않을 경우에 false를 반환합니다.*/
+	//???
+	if (pml4_set_page(&thread_current()->pml4, page->va, frame->kva, page->rw))
+		return swap_in(page, frame->kva);
+	return false;
 }
 
 /* Initialize new supplemental page table */
