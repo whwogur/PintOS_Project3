@@ -8,6 +8,6 @@
         "cstdlib": "c"
     },
     "editor.tokenColorCustomizations": {
-        "comments": "#ffffff"
+        "comments": "#00af1a"
     }
 }
