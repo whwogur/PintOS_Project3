@@ -121,10 +121,9 @@ struct thread
 	struct semaphore free_sema;
 
 	/* -- Project 3 --*/
-	struct supplemental_page_table spt;
 
-	int stdin_count;
-	int stdout_count;
+	uintptr_t rsp;
+	void *stack_bottom;
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
