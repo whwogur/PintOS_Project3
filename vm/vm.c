@@ -253,16 +253,38 @@ supplemental_page_table_init (struct supplemental_page_table *spt UNUSED)
 {
 	hash_init(&spt->spt_hash_table, hash_func, hash_less, NULL);
 }
-
+/* hash function; spt_src의 해쉬 테이블에서 모든 페이지 구조체를 spt_dst
+ * 테이블로 복사. uninit, anon, file 전부 다 uninit으로 */
+void
+copy_page(struct hash_elem *e, void *aux)
+{
+	struct page* page = hash_entry(e, struct page, hash_elem);
+	vm_alloc_page(page->uninit.type, page->va, page->writable);
+	if(page->frame) {
+		struct page *child = spt_find_page(&thread_current()->spt, page->va);
+		child->frame = vm_get_frame();
+		memcpy(child->frame->kva, page->frame->kva, PGSIZE);
+		child->frame->page = child;
+		pml4_set_page(thread_current()->pml4, child->va, child->frame->kva, child->writable);
+	}
+}
 /* Copy supplemental page table from src to dst */
 bool
 supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
-		struct supplemental_page_table *src UNUSED) {
+		struct supplemental_page_table *src UNUSED)
+{
+	hash_apply(&src->spt_hash_table, copy_page);
 }
-
+void
+kill_page(struct hash_elem *e, void *aux)
+{
+	struct page *page = hash_entry(e, struct page, hash_elem);
+	destroy(page);
+}
 /* Free the resource hold by the supplemental page table */
 void
 supplemental_page_table_kill (struct supplemental_page_table *spt UNUSED) {
 	/* TODO: Destroy all the supplemental_page_table hold by thread and
 	 * TODO: writeback all the modified contents to the storage. */
+	hash_clear(&spt->spt_hash_table, kill_page);
 }
