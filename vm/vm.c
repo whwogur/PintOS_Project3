@@ -172,6 +172,8 @@ vm_get_frame (void) {
 /* Growing the stack. */
 static void
 vm_stack_growth (void *addr UNUSED) {
+	/* -- Project 3 -- */
+	vm_alloc_page(VM_ANON | VM_MARKER_0, addr, true);
 }
 
 /* Handle the fault on write_protected page */
@@ -274,6 +276,7 @@ supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
 		struct supplemental_page_table *src UNUSED)
 {
 	hash_apply(&src->spt_hash_table, copy_page);
+	return true;
 }
 void
 kill_page(struct hash_elem *e, void *aux)

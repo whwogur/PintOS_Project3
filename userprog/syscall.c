@@ -32,6 +32,8 @@ int write(int fd, void *buffer, unsigned size);
 void seek(int fd, unsigned position);
 unsigned tell(int fd);
 void close(int fd);
+void *munmap(void *addr);
+void *mmap(void *addr, size_t length, int writable, int fd, off_t offset);
 
 static struct file *find_file_by_fd(int fd);
 int add_file_to_fdt(struct file *file);
@@ -120,6 +122,12 @@ void syscall_handler(struct intr_frame *f UNUSED)
         break;
     case SYS_CLOSE:
         close(f->R.rdi);
+        break;
+    case SYS_MMAP:
+        f->R.rax = mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
+        break;
+    case SYS_MUNMAP:
+        munmap(f->R.rdi);
         break;
     default:
         /*printf ("system call!\n");
@@ -384,4 +392,26 @@ void close(int fd)
     }
     file_close(file_obj);
     remove_file_from_fdt(fd);
+}
+
+/* -- Project 3 -- */
+void*
+mmap(void *addr, size_t length, int writable, int fd, off_t offset)
+{
+    if ((signed)length <= 0 || length < offset)
+        return NULL;
+    
+    if(!addr || fd < 2 || is_kernel_vaddr(addr) || pg_ofs(addr))
+        return NULL;
+    
+    struct file* file = file_reopen(thread_current()->fd_table[fd]);
+    return do_mmap(addr, length, writable, file, offset);
+}
+
+void*
+munmap(void *addr)
+{
+    if(is_kernel_vaddr(addr))
+        return NULL;
+    do_munmap(addr);
 }
