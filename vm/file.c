@@ -66,12 +66,24 @@ lazy_load_file(struct page *page, struct aux_struct *aux)
 static bool
 file_backed_swap_in (struct page *page, void *kva) {
 	struct file_page *file_page UNUSED = &page->file;
+	if(file_read_at(file_page->file, kva, file_page->read_byte,
+					file_page->offset != (int)file_page->read_byte)) {
+		return false;
+	}
+	return true;
 }
 
 /* Swap out the page by writeback contents to the file. */
 static bool
 file_backed_swap_out (struct page *page) {
 	struct file_page *file_page UNUSED = &page->file;
+	if(pml4_is_dirty(thread_current()->pml4, page->va)) {
+		pml4_set_dirty(thread_current()->pml4, page->va, false);
+		file_write_at(page->file.file, page->va, page->file.read_byte, page->file.offset);
+	}
+	pml4_clear_page(thread_current()->pml4, page->va);
+	page->frame = NULL;
+	return true;
 }
 
 /* Destory the file backed page. PAGE will be freed by the caller. */
