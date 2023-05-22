@@ -121,9 +121,8 @@ struct thread
 	struct semaphore free_sema;
 
 	/* -- Project 3 --*/
-
-	uintptr_t rsp;
 	void *stack_bottom;
+	struct bitmap *disk_table;
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
