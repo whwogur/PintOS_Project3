@@ -134,7 +134,31 @@ static struct frame *
 vm_get_victim (void) {
 	struct frame *victim = NULL;
 	 /* TODO: The policy for eviction is up to you. */
+	struct thread * curr = thread_current();
+	struct hash hash = curr->spt.spt_hash_table;
+	struct hash_iterator *iter;
+	hash_first(iter,&hash);
+	while(hash_next(iter)) {
 
+		struct page * cur_page = hash_entry(iter->elem, struct page ,hash_elem);
+
+		if(pml4_is_accessed(curr->pml4, cur_page->va)) {
+			pml4_set_accessed(curr->pml4, cur_page->va, false);
+			continue;
+		}
+		if(cur_page->frame == NULL) continue;
+		
+		if (page_get_type(cur_page) == VM_FILE)
+		{
+			victim = cur_page->frame;
+			break;
+		}
+		else if (page_get_type(cur_page) == VM_ANON)
+		{
+			victim = cur_page->frame;
+			break;
+		}
+	}
 	return victim;
 }
 
@@ -144,8 +168,13 @@ static struct frame *
 vm_evict_frame (void) {
 	struct frame *victim UNUSED = vm_get_victim ();
 	/* TODO: swap out the victim and return the evicted frame. */
+	if(victim != NULL){
+		struct thread *curr = thread_current();
+		struct page *victim_page = victim->page;
 
-	return NULL;
+		swap_out(victim_page);
+	}
+	return victim;
 }
 
 /* palloc() and get frame. If there is no available page, evict the page
