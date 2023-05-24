@@ -39,10 +39,11 @@ file_backed_initializer (struct page *page, enum vm_type type, void *kva) {
 	file_page->zero_byte = dummy->zero_bytes;
 	file_page->type = type;
 
-	if(file_read_at(dummy->vmfile, kva, dummy->read_bytes, dummy->ofs)
-												!= dummy->read_bytes) {
+	if(file_read_at(dummy->vmfile , kva , dummy->read_bytes , dummy->ofs ) != dummy->read_bytes) {
+
 		return false;
 	}
+
 	return true;
 }
 
@@ -66,8 +67,7 @@ lazy_load_file(struct page *page, struct aux_struct *aux)
 static bool
 file_backed_swap_in (struct page *page, void *kva) {
 	struct file_page *file_page UNUSED = &page->file;
-	if(file_read_at(file_page->file, kva, file_page->read_byte,
-					file_page->offset != (int)file_page->read_byte)) {
+	if(file_read_at(file_page->file,kva ,file_page->read_byte, file_page->offset != (int) file_page->read_byte)){
 		return false;
 	}
 	return true;
@@ -118,20 +118,21 @@ do_mmap (void *addr, size_t length, int writable,
 
 	void *va = addr;
 
-	while(0 < read_size) {
-		struct aux_struct *temp_aux = (struct aux_struct *)malloc(sizeof(struct aux_struct));
+	while (0 < read_size){
+		struct aux_struct *temp_aux = (struct aux_struct*)malloc(sizeof(struct aux_struct));
 
-		uint32_t read_bytes = read_size > PGSIZE ? PGSIZE : read_size;
-
+        uint32_t read_bytes = read_size > PGSIZE ? PGSIZE : read_size;
+		
 		temp_aux->vmfile = file;
 		temp_aux->ofs = offset;
 		temp_aux->read_bytes = read_bytes;
 		temp_aux->zero_bytes = PGSIZE - read_bytes;
 		temp_aux->writable = writable;
 		temp_aux->upage = va;
-
-		if(!vm_alloc_page_with_initializer(VM_FILE, va, writable, lazy_load_file, temp_aux))
+		
+		if (!vm_alloc_page_with_initializer(VM_FILE, va, writable, lazy_load_file, temp_aux))
 			return NULL;
+		
 		read_size -= read_bytes;
 		va += PGSIZE;
 		offset += read_bytes;

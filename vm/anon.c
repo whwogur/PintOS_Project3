@@ -23,8 +23,6 @@ vm_anon_init (void) {
 	/* TODO: Set up the swap_disk. */
 	/* -- Project 3 -- */
 	swap_disk = disk_get(1, 1);
-	// disk sector 크기 = 512bytes
-	// page 크기 = 4KB = 512 * 8 bytes = disk sector * 8
 	thread_current()->disk_table = bitmap_create(disk_size(swap_disk) / 8);
 }
 
@@ -44,7 +42,7 @@ anon_swap_in (struct page *page, void *kva) {
 	/* -- Project 3 -- */
 	struct disk *disk = thread_current()->disk_table;
 	size_t sector_slot = page->anon.swap_slot;
-	disk_read(disk, sector_slot, kva);
+	disk_read(disk, (disk_sector_t)sector_slot, kva);
 	bitmap_set(disk, sector_slot, false);
 
 	return true;
@@ -61,10 +59,10 @@ anon_swap_out (struct page *page) {
 	size_t empty_slot = bitmap_scan(disk, 0, 1, false);
 
 	if(empty_slot == BITMAP_ERROR) {
-		PANIC("empty_slot, BITMAP_ERROR");
+		PANIC("NO empty_slot, BITMAP_ERROR");
 	}
 	page->anon.swap_slot = empty_slot;
-	disk_write(disk, empty_slot, page->frame->kva);
+	disk_write(disk, (disk_sector_t)empty_slot, page->frame->kva);
 	bitmap_set(disk, empty_slot, true);
 	
 	if(page->frame) {
